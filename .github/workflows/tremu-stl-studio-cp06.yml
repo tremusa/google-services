@@ -1,0 +1,30 @@
+name: Tremu STL Studio CP06 Windows Portable
+on:
+  push:
+    branches: [build/tremu-stl-studio-cp06]
+jobs:
+  windows-exe:
+    runs-on: windows-latest
+    steps:
+      - name: Download CP06 source
+        shell: pwsh
+        env:
+          SOURCE_URL: "https://sdmntprnortheu.oaiusercontent.com/files/00000000-0400-81f4-83ff-c3aec675d8ba/raw?se=2026-11-03T05%3A18%3A59Z&sp=r&sv=2026-02-06&sr=b&scid=fef7fecc-e705-5b63-b2b1-f3775f72e10a&skoid=e32cbaad-a1eb-4299-9f16-1b364ab43781&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-11-03T03%3A39%3A28Z&ske=2026-11-04T03%3A39%3A28Z&sks=b&skv=2026-02-06&sig=AjmPLLXxco7t6hvEy6wd4AkxNQcaVNjesiaKsm2aXO4%3D"
+        run: |
+          Invoke-WebRequest -Uri $env:SOURCE_URL -OutFile source.zip
+          Expand-Archive source.zip -DestinationPath source
+          Get-ChildItem source -Recurse | Select-Object -First 30
+      - name: Build portable EXE
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip pyinstaller
+          cd source/TremuSTLStudio_Windows
+          python -m unittest discover -p "test_*.py" -v
+          cmd /c build_windows.bat
+          Get-ChildItem -Recurse -Filter *.exe
+      - name: Upload EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: TremuSTLStudio-CP06-Windows-Portable
+          path: source/TremuSTLStudio_Windows/dist/*.exe
+          if-no-files-found: error
